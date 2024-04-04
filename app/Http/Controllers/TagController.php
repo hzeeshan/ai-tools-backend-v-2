@@ -19,4 +19,9 @@ class TagController extends Controller
     {
         return $this->tagService->index();
     }
+
+    public function getToolsByTagSlug($slug)
+    {
+        return $this->tagService->getToolsByTagSlug($slug);
+    }
 }

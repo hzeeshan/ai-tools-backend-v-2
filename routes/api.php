@@ -30,6 +30,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'public'], function () {
 Route::get("/tools", [ToolController::class, 'index']);
 Route::get("/tools/search", [ToolController::class, 'searchTool']);
 Route::get("/tool/{slug}", [ToolController::class, 'getToolBySlug']);
+Route::get('/tags/{slug}/tools', [TagController::class, 'getToolsByTagSlug']);
 
 
 Route::get('/tags', [TagController::class, 'index']);

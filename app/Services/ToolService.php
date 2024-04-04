@@ -29,9 +29,11 @@ class ToolService
             $this->performSearch($baseQuery, $request->input('query'));
         }
 
-        $results = $baseQuery->get();
+        $perPage = $request->get('perPage', 50);
 
-        return response()->json(['data' => $results]);
+        $results = $baseQuery->paginate($perPage);
+
+        return response()->json($results);
     }
 
     private function applyPricingFilter($query, $request)
@@ -49,7 +51,6 @@ class ToolService
                 'deals' => 'Deals',
             ];
 
-            // Translate the pricing key into the actual database string
             $pricingValue = $pricingMapping[$pricingKey] ?? null;
 
             if ($pricingValue) {

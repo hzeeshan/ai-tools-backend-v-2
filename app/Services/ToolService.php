@@ -139,4 +139,20 @@ class ToolService
             'relatedTools' => $relatedTools,
         ]);
     }
+
+    public function getToolsByTagIds($request)
+    {
+        $tagIdsString = $request->query('tagIds');
+        $tagIds = explode(',', $tagIdsString);
+
+        if (empty(array_filter($tagIds))) {
+            return response()->json(['error' => 'Invalid tagIds parameter'], 400);
+        }
+
+        $tools = Tool::whereHas('tags', function ($query) use ($tagIds) {
+            $query->whereIn('tags.id', $tagIds);
+        })->paginate(50);
+
+        return response()->json($tools);
+    }
 }

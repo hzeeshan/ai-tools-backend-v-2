@@ -18,7 +18,7 @@ class TagService
 
         $tools = Tool::with('tags')
             ->whereHas('tags', function ($query) use ($tag) {
-                $query->where('tags.id', $tag->id);  // Use the tag ID directly
+                $query->where('tags.id', $tag->id);
             })
             ->paginate(10);
 

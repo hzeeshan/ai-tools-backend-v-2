@@ -29,4 +29,9 @@ class ToolController extends Controller
     {
         return $this->toolService->searchTool($request);
     }
+
+    public function getToolsByTagIds(Request $request)
+    {
+        return $this->toolService->getToolsByTagIds($request);
+    }
 }

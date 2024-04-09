@@ -28,6 +28,7 @@ Route::get('/', function () {
 });
 
 Route::get('/assing-role', [UserController::class, 'assignAdminRole']);
+
 Route::get('/dev', function () {
     return;
     $csvFile = '/Users/hafizzeeshanriaz/dev/python/selenium/data.csv';

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('short_description');
-            $table->text('long_description');
+            $table->text('long_description')->nullable();
             $table->string('tool_link');
             $table->string('price')->nullable();
             $table->string('pricing_plans')->nullable();

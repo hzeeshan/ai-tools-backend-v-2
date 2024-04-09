@@ -25,12 +25,22 @@ class UserController extends Controller
 
     public function assignAdminRole()
     {
-        $role = Role::create(['name' => 'admin']);
-        $permission = Permission::create(['name' => 'edit posts']);
+        if (!Role::where('name', 'admin')->exists()) {
+            Role::create(['name' => 'admin']);
+        }
 
-        $user = User::find(1);
+        if (!Permission::where('name', 'edit posts')->exists()) {
+            Permission::create(['name' => 'edit posts']);
+        }
+
+        $email = "hafizzeeshan619@gmail.com";
+        $user = User::where('email', $email)->first();
         $roleName = 'admin';
+
+        // Assign the role to the user
         $user->assignRole($roleName);
+
+        // Give the user permission to all permissions if the role is admin
         if ($roleName === 'admin') {
             $user->givePermissionTo(Permission::all());
         }

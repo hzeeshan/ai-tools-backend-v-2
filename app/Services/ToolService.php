@@ -2,19 +2,27 @@
 
 namespace App\Services;
 
+use Image;
+use App\Models\Tag;
 use App\Models\Tool;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ToolService
 {
 
+
     public function index($request)
     {
-        $page = $request->get('page', 1);
-        $pageSize = 10;
-        //sleep(3);
-        $tools = Tool::with('tags')->skip(($page - 1) * $pageSize)->take($pageSize)->get();
+        $pageSize = 12;
+        $tools = Tool::with('tags')
+            ->orderBy('favorites_count', 'desc')
+            ->paginate($pageSize);
+
         return response()->json($tools);
     }
+
 
     public function searchTool($request)
     {
@@ -34,6 +42,99 @@ class ToolService
         $results = $baseQuery->paginate($perPage);
 
         return response()->json($results);
+    }
+
+    public function store($request)
+    {
+
+        try {
+
+            $tool = Tool::create([
+                'name' => $request->name,
+                'slug' => Str::slug($request->slug, '-'),
+                'short_description' => $request->short_description,
+                'long_description' => $request->description,
+                'tool_link' => $request->tool_link,
+                'price' => $request->price,
+                'pricing_plans' => $request->planType,
+                'is_verified' => $request->is_verified == 'true' ? 1 : 0
+            ]);
+
+            if ($request->hasFile('mainImage')) {
+                DB::transaction(function () use ($request, $tool) {
+                    $imagePath = $this->uploadImage($request->file('mainImage'), $tool->id, 'main');
+                    $tool->image_path = $imagePath;
+                    $tool->save();
+                });
+            }
+
+            $this->handleTags($request, $tool);
+
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'message' => 'App successfully created',
+                'data' => $tool
+            ], 201);
+        } catch (\Exception $e) {
+
+            \Log::error($e->getMessage());
+
+            return response([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function uploadImage($file, $appId, $type = null)
+    {
+        $filename = Str::uuid() . '.webp'; // change extension to webp
+
+        $image = Image::make($file);
+
+        $width = ($type == 'main') ? 1200 : 800;
+        $quality = ($type == 'main') ? 80 : 70;
+
+        $image->resize($width, null, function ($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
+        });
+
+        // Compress image (you can adjust the quality as per your needs)
+        $image->encode('webp', $quality);
+
+
+        // Save the image
+        Storage::disk('public')->put("images/{$filename}", (string) $image);
+
+        // Set the URL path
+        $urlPath = 'storage/images/' . $filename;
+
+        return $urlPath;
+    }
+
+    private function handleTags($request, $tool)
+    {
+        $existingTagIds = $request->existingTags ? json_decode($request->existingTags, true) : [];
+        $newTags = $request->newTags ? json_decode($request->newTags, true) : [];
+
+        foreach ($newTags as $tagName) {
+            $slug = $this->generateUniqueSlugForTag($tagName);
+            $newTag = Tag::firstOrCreate(['name' => $tagName, 'slug' => $slug]);
+            $existingTagIds[] = $newTag->id;
+        }
+
+        $tool->tags()->sync($existingTagIds);
+    }
+
+    private function generateUniqueSlugForTag($tagName)
+    {
+        $slug = Str::slug($tagName);
+        for ($suffix = 1; Tag::where('slug', $slug)->exists(); $suffix++) {
+            $slug = Str::slug($tagName) . '-' . $suffix;
+        }
+        return $slug;
     }
 
     private function applyPricingFilter($query, $request)
@@ -154,5 +255,73 @@ class ToolService
         })->paginate(50);
 
         return response()->json($tools);
+    }
+
+    public function getSingleAppDetail($toolId)
+    {
+        return Tool::with('tags', 'socialLinks')->findOrFail($toolId);
+    }
+
+    public function update($request, $id)
+    {
+
+        $tool = $this->updateApp($request, $id);
+        $this->handleTags($request, $tool);
+        $this->updateImages($request, $id);
+
+        return response()->json([
+            'status' => 'success',
+            'success' => true,
+            'message' => 'App successfully updated',
+            'data' => $tool
+        ], 200);
+    }
+
+    private function updateApp($request, $id)
+    {
+        $app = Tool::findOrFail($id);
+        $app->name = $request->name;
+        $app->slug = Str::slug($request->slug, '-');
+        $app->short_description = $request->short_description;
+        $app->long_description = $request->description;
+        $app->tool_link = $request->tool_link;
+        $app->is_verified = $request->is_verified == 'true' ? 1 : 0;
+        $app->save();
+
+        return $app;
+    }
+
+
+    private function updateImages($request, $id)
+    {
+        if ($request->mainImage) {
+
+            // If originalMainImage and formData.mainImage are different, replace the main image
+            if ($request->originalMainImage != $request->mainImage->getClientOriginalName()) {
+                // Delete the original main image
+                /* $originalImage = Image::find($request->originalMainImage);
+                if ($originalImage) {
+                    $this->deleteImage($originalImage);
+                } */
+
+                // Save the new one
+                $imagePath = $this->uploadImage($request->mainImage, $id);
+
+                $app = Tool::find($id);
+                $app->image_path = $imagePath;
+                $app->save();
+            }
+        }
+    }
+
+    public function destroy($toolId)
+    {
+
+        try {
+            Tool::findOrFail($toolId)->delete();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 }

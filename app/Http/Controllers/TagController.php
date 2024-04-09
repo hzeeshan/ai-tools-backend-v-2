@@ -24,4 +24,19 @@ class TagController extends Controller
     {
         return $this->tagService->getToolsByTagSlug($slug);
     }
+
+    public function store(Request $request)
+    {
+        return $this->tagService->store($request);
+    }
+
+    public function update(Request $request)
+    {
+        return $this->tagService->update($request);
+    }
+
+    public function destroy($id)
+    {
+        return $this->tagService->destroy($id);
+    }
 }

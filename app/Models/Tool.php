@@ -21,4 +21,9 @@ class Tool extends Model
     {
         return $this->hasMany(ToolSocialLink::class);
     }
+
+    public function ratings()
+    {
+        return $this->hasMany(ToolRating::class);
+    }
 }

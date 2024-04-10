@@ -6,6 +6,7 @@ use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ContactFormSubmissionController;
 
 
 /*

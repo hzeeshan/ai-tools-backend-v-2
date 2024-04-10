@@ -21,7 +21,7 @@ class ContactFormSubmissionController extends Controller
         try {
             $this->createSubmissionAndSendMail($validatedData['data']);
 
-            return response()->json(['success' => true, 'message' => 'Sent successfully']);
+            return response()->json(['success' => true, 'message' => 'Message sent successfully, we will get back to you shortly.']);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 
